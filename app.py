@@ -53,7 +53,6 @@ def procesar_archivo(file_path):
         cursor.execute(sql, tuple)
         cursor.execute("SELECT @@IDENTITY AS ID;")
         idCfdi = cursor.fetchone()[0]
-        print(idCfdi)
 
         # Inserta nomina
         for nomina in data['nomina']:
