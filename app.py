@@ -7,8 +7,6 @@ import pyodbc
 # Define la función que procesará un archivo XML y enviará los datos a SQL Server.
 def procesar_archivo(file_path):
     try:
-        #file_path = r'C:/Users/grv/Documents/proyectos/udem/conciliacion/xml/sat/marzo/UMO780601S4A_EB5910B1-93BD-4BE4-93AE-2D4E955A895D.xml' # 2 nomina
-        #file_path = r'C:/Users/grv/Documents/proyectos/udem/conciliacion/xml/sat/enero/UMO780601S4A_00AC9F88-8F94-415D-AF6E-471FEAD99B43.xml' # 1 nomina
         # Abre y parsea el archivo XML
         with open(file_path, encoding='utf-8') as xml_file:
             data_dict = xmltodict.parse(xml_file.read())
@@ -65,7 +63,7 @@ def procesar_archivo(file_path):
                      nomina.get('receptor_tipoJornada'), nomina.get('receptor_tipoRegimen'), nomina.get('receptor_numEmpleado'), nomina.get('receptor_departamento'), nomina.get('receptor_puesto'), 
                      nomina.get('receptor_riesgoPuesto'), nomina.get('receptor_periodicidadPago'), nomina.get('receptor_banco'), nomina.get('receptor_cuentaBancaria'), nomina.get('receptor_salarioBaseCotApor'), 
                      nomina.get('receptor_salarioDiarioIntegrado'), nomina.get('receptor_claveEntFed'))
-            
+
             sql = """INSERT INTO nomina (
                 idCfdi, posicion, tipoNomina, fechaPago, fechaInicialPago, fechaFinalPago, numDiasPagados, totalPercepciones, totalDeducciones, totalOtrosPagos, emisor_RegistroPatronal, 
                 receptor_curp, receptor_numSeguridadSocial, receptor_fechaInicioRelLaboral, receptor_antiguedad, receptor_tipoContrato, receptor_tipoJornada, receptor_tipoRegimen, 
@@ -76,7 +74,7 @@ def procesar_archivo(file_path):
             cursor.execute(sql, tuple)
             cursor.execute("SELECT @@IDENTITY AS ID;")
             idNomina = cursor.fetchone()[0]
-            
+
             # Inserta desgloses
             for desglose in nomina['desgloses']:
                 tuple = (idNomina, desglose['posicion'], desglose['categoria'], desglose['subcategoria'], desglose['atributo'], desglose['valor'])
@@ -84,13 +82,13 @@ def procesar_archivo(file_path):
                     idNomina, posicion, categoria, subcategoria, atributo, valor
                 ) values(?, ?, ?, ?, ?, ?)"""
                 cursor.execute(sql, tuple)
-        
+
         cursor.commit()
         cursor.close()
         connection.close()
 
         # Indica que el archivo ha sido procesado
-        print(f"Procesado: {file_path}")
+        #print(f"Procesado: {file_path}")
 
     except Exception as e:
         cursor.close()
@@ -101,7 +99,7 @@ def extract_and_process_data(root):
     # Leer datos generales de XML
     data = {'cfdi': {}, 'nomina': [], 'desglose_nomina': []}
     cfdi_comprobante = root['cfdi:Comprobante']
-    
+
     data['cfdi']['UUID'] = cfdi_comprobante['cfdi:Complemento']['tfd:TimbreFiscalDigital']['@UUID']
     data['cfdi']['serie'] = cfdi_comprobante.get('@Serie')
     data['cfdi']['folio'] = cfdi_comprobante.get('@Folio')
@@ -139,7 +137,7 @@ def extract_and_process_data(root):
     if type(nominas) is not list:
         # Si solo existe un nodo lo agregamos a un arreglo
         nominas = [nominas]
-    
+
     # Recorrer arreglo nominas
     for idx, item_nomina in enumerate(nominas):
         # Leer datos generales de nomina
@@ -158,7 +156,7 @@ def extract_and_process_data(root):
         # Validar que exista Emisor
         if 'nomina12:Emisor' in item_nomina.keys():
             nomina['emisor_RegistroPatronal'] = item_nomina['nomina12:Emisor'].get('@RegistroPatronal')
-        
+
         # Validar que exista Receptor
         if 'nomina12:Receptor' in item_nomina.keys():
             nomina['receptor_curp'] = item_nomina['nomina12:Receptor'].get('@Curp')
@@ -192,7 +190,7 @@ def extract_and_process_data(root):
                     category_array = category[key]
                     if type(category_array) is not list:
                         category_array = [category_array]
-                    
+
                     # Extraemos info de cada elemento dentro del arreglo de subnodos
                     for subidx, subcategory in enumerate(category_array):
                         for attribute in [attr for attr in subcategory if attr.startswith('@')]:
@@ -239,7 +237,6 @@ def start():
     with ThreadPoolExecutor(max_workers=num_hilos) as executor:
         for archivo in archivos_xml:
             executor.submit(procesar_archivo, archivo)
-            break
 
     # Detiene el temporizador
     end_time = time.time()
