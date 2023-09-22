@@ -15,9 +15,13 @@ def procesar_archivo(file_path):
 
         # Extrae y procesa los datos necesarios del archivo XML
         data = extract_and_process_data(root=data_dict)
-        
+
         # Configura la conexión a SQL Server
-        connection_string = "Driver={ODBC Driver 11 for SQL Server};Server=172.16.200.142;Database=CONCILIACION;UID=Usr_conciliacion;PWD=C0nc1li4Tst$"
+        driver_name = ''
+        driver_names = [x for x in pyodbc.drivers() if x.endswith(' for SQL Server')]
+        if driver_names:
+            driver_name = driver_names[0]
+        connection_string = f"Driver={{{driver_name}}};Server=172.16.200.142;Database=CONCILIACION;UID=Usr_conciliacion;PWD=C0nc1li4Tst$"
         connection = pyodbc.connect(connection_string)
 
         # Inserta los datos en la base de datos
@@ -51,6 +55,7 @@ def procesar_archivo(file_path):
         cursor.execute(sql, tuple)
         cursor.execute("SELECT @@IDENTITY AS ID;")
         idCfdi = cursor.fetchone()[0]
+        print(idCfdi)
 
         # Inserta nomina
         for nomina in data['nomina']:
@@ -85,7 +90,7 @@ def procesar_archivo(file_path):
         connection.close()
 
         # Indica que el archivo ha sido procesado
-        #print(f"Procesado: {file_path}")
+        print(f"Procesado: {file_path}")
 
     except Exception as e:
         cursor.close()
@@ -234,6 +239,7 @@ def start():
     with ThreadPoolExecutor(max_workers=num_hilos) as executor:
         for archivo in archivos_xml:
             executor.submit(procesar_archivo, archivo)
+            break
 
     # Detiene el temporizador
     end_time = time.time()
